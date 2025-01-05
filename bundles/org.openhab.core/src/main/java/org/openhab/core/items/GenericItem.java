@@ -321,7 +321,7 @@ public abstract class GenericItem implements ActiveItem {
             try {
                 listener.timeSeriesUpdated(GenericItem.this, timeSeries);
             } catch (Exception e) {
-                logger.warn("failed notifying listener '{}' about timeseries update of item {}: {}", listener,
+                logger.warn("Failed notifying listener '{}' about time series update of item {}: {}", listener,
                         GenericItem.this.getName(), e.getMessage(), e);
             }
         }));

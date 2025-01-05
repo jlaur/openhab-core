@@ -32,6 +32,7 @@ import org.openhab.core.service.CommandDescriptionService;
 import org.openhab.core.service.StateDescriptionService;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
+import org.openhab.core.types.TimeSeries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * @author Kai Kreuzer - Initial contribution
  */
 @NonNullByDefault
-public class GroupItem extends GenericItem implements StateChangeListener, MetadataAwareItem {
+public class GroupItem extends GenericItem implements StateChangeListener, TimeSeriesListener, MetadataAwareItem {
 
     public static final String TYPE = "Group";
 
@@ -189,12 +190,14 @@ public class GroupItem extends GenericItem implements StateChangeListener, Metad
     private void registerStateListener(Item item) {
         if (item instanceof GenericItem genericItem) {
             genericItem.addStateChangeListener(this);
+            genericItem.addTimeSeriesListener(this);
         }
     }
 
     private void unregisterStateListener(Item old) {
         if (old instanceof GenericItem genericItem) {
             genericItem.removeStateChangeListener(this);
+            genericItem.removeTimeSeriesListener(this);
         }
     }
 
@@ -397,6 +400,20 @@ public class GroupItem extends GenericItem implements StateChangeListener, Metad
     }
 
     @Override
+    public void timeSeriesUpdated(Item item, TimeSeries timeSeries) {
+        logger.info("timeSeriesUpdated: item={}, timeSeries={}", item.toString(), timeSeries.toString());
+        // We need to keep track of future states of all child members,
+        // in order to always be able to recalculate.
+        // To consider: What if some child members don't have forecast policy?
+        // Does it even matter? Can we get future states from the event bus, or
+        // do we need to keep them here?
+        // Anwyway, create full timeline from all members and perform calculation for each change,
+        // then push this as a result as a new time series. Start with this.state which is valid now.
+        // Time series will become valid later. Continuously flush expired states to reclaim memory.
+        sendGroupTimeSeriesUpdatedEvent(item.getName(), timeSeries);
+    }
+
+    @Override
     public void setState(State state, @Nullable String source) {
         ZonedDateTime now = ZonedDateTime.now();
         State oldState = this.state;
@@ -444,6 +461,14 @@ public class GroupItem extends GenericItem implements StateChangeListener, Metad
         if (eventPublisher1 != null) {
             eventPublisher1.post(ItemEventFactory.createGroupStateChangedEvent(getName(), memberName, newState,
                     oldState, lastStateUpdate, lastStateChange));
+        }
+    }
+
+    private void sendGroupTimeSeriesUpdatedEvent(String memberName, TimeSeries timeSeries) {
+        EventPublisher eventPublisher1 = this.eventPublisher;
+        if (eventPublisher1 != null) {
+            eventPublisher1
+                    .post(ItemEventFactory.createGroupTimeSeriesUpdatedEvent(getName(), memberName, timeSeries, null));
         }
     }
 

@@ -64,6 +64,7 @@ public class ItemEventFactory extends AbstractEventFactory {
     private static final String GROUPITEM_STATE_UPDATED_EVENT_TOPIC = "openhab/items/{itemName}/{memberName}/stateupdated";
 
     private static final String GROUPITEM_STATE_CHANGED_EVENT_TOPIC = "openhab/items/{itemName}/{memberName}/statechanged";
+    private static final String GROUPITEM_TIME_SERIES_UPDATED_EVENT_TOPIC = "openhab/items/{itemName}/{memberName}/timeseriesupdated";
 
     private static final String ITEM_ADDED_EVENT_TOPIC = "openhab/items/{itemName}/added";
 
@@ -78,7 +79,7 @@ public class ItemEventFactory extends AbstractEventFactory {
         super(Set.of(ItemCommandEvent.TYPE, ItemStateEvent.TYPE, ItemStatePredictedEvent.TYPE,
                 ItemStateUpdatedEvent.TYPE, ItemStateChangedEvent.TYPE, ItemAddedEvent.TYPE, ItemUpdatedEvent.TYPE,
                 ItemRemovedEvent.TYPE, GroupStateUpdatedEvent.TYPE, GroupItemStateChangedEvent.TYPE,
-                ItemTimeSeriesEvent.TYPE, ItemTimeSeriesUpdatedEvent.TYPE));
+                ItemTimeSeriesEvent.TYPE, ItemTimeSeriesUpdatedEvent.TYPE, GroupTimeSeriesUpdatedEvent.TYPE));
     }
 
     @Override
@@ -108,6 +109,8 @@ public class ItemEventFactory extends AbstractEventFactory {
             return createGroupStateUpdatedEvent(topic, payload);
         } else if (GroupItemStateChangedEvent.TYPE.equals(eventType)) {
             return createGroupStateChangedEvent(topic, payload);
+        } else if (GroupTimeSeriesUpdatedEvent.TYPE.equals(eventType)) {
+            return createGroupTimeSeriesUpdatedEvent(topic, payload);
         }
         throw new IllegalArgumentException("The event type '" + eventType + "' is not supported by this factory.");
     }
@@ -131,6 +134,14 @@ public class ItemEventFactory extends AbstractEventFactory {
         ZonedDateTime lastStateUpdate = bean.getLastStateUpdate();
         return new GroupItemStateChangedEvent(topic, payload, itemName, memberName, state, oldState, lastStateUpdate,
                 lastStateChange);
+    }
+
+    private Event createGroupTimeSeriesUpdatedEvent(String topic, String payload) {
+        String itemName = getItemName(topic);
+        String memberName = getMemberName(topic);
+        ItemTimeSeriesEventPayloadBean bean = deserializePayload(payload, ItemTimeSeriesEventPayloadBean.class);
+        TimeSeries timeSeries = bean.getTimeSeries();
+        return new GroupTimeSeriesUpdatedEvent(topic, payload, itemName, memberName, timeSeries, null);
     }
 
     private Event createCommandEvent(String topic, String payload, @Nullable String source) {
@@ -392,6 +403,24 @@ public class ItemEventFactory extends AbstractEventFactory {
                 state.toFullString(), lastStateUpdate);
         String payload = serializePayload(bean);
         return new GroupStateUpdatedEvent(topic, payload, groupName, member, state, lastStateUpdate, source);
+    }
+
+    /**
+     * Creates a group item time series updated event.
+     *
+     * @param groupName the name of the group to report the state update for
+     * @param member the name of the item that updated the group state
+     * @param timeSeries the time series
+     * @param source the name of the source identifying the sender (can be null)
+     * @return the created group item time series update event
+     * @throws IllegalArgumentException if groupName or state is null
+     */
+    public static GroupTimeSeriesUpdatedEvent createGroupTimeSeriesUpdatedEvent(String groupName, String member,
+            TimeSeries timeSeries, @Nullable String source) {
+        String topic = buildGroupTopic(GROUPITEM_TIME_SERIES_UPDATED_EVENT_TOPIC, groupName, member);
+        ItemTimeSeriesEventPayloadBean bean = new ItemTimeSeriesEventPayloadBean(timeSeries);
+        String payload = serializePayload(bean);
+        return new GroupTimeSeriesUpdatedEvent(topic, payload, groupName, member, timeSeries, source);
     }
 
     /**

@@ -102,6 +102,7 @@ public class ItemUpdater extends AbstractItemEventSubscriber {
     protected void receiveTimeSeries(ItemTimeSeriesEvent timeSeriesEvent) {
         try {
             Item item = itemRegistry.getItem(timeSeriesEvent.getItemName());
+            // FIXME: Simply remove first condition below or something more needed?
             if (!(item instanceof GroupItem) && item instanceof GenericItem genericItem) {
                 genericItem.setTimeSeries(timeSeriesEvent.getTimeSeries());
             }
