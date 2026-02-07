@@ -654,9 +654,8 @@ public class QuantityType<T extends Quantity<T>> extends Number
      * @return the product of the given value with this {@link QuantityType}.
      */
     public QuantityType<?> multiply(BigDecimal value) {
-        Quantity<T> quantity = Quantities.getQuantity(this.quantity.getValue(), this.quantity.getUnit(),
-                Scale.ABSOLUTE);
-        return new QuantityType<>(quantity.multiply(value));
+        BigDecimal newValue = this.toBigDecimal().multiply(value);
+        return new QuantityType<>(newValue, getUnit());
     }
 
     /**
@@ -666,6 +665,11 @@ public class QuantityType<T extends Quantity<T>> extends Number
      * @return the product of the given {@link QuantityType} and this QuantityType.
      */
     public QuantityType<?> multiply(QuantityType<?> state) {
+        // Dimensionless multiplication must preserve value semantics
+        if (state.getUnit().equals(Units.ONE)) {
+            BigDecimal newValue = this.toBigDecimal().multiply(state.toBigDecimal());
+            return new QuantityType<>(newValue, getUnit());
+        }
         Quantity<T> quantity = Quantities.getQuantity(this.quantity.getValue(), this.quantity.getUnit(),
                 Scale.ABSOLUTE);
         Quantity<?> stateQuantity = Quantities.getQuantity(state.quantity.getValue(), state.quantity.getUnit(),

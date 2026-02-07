@@ -450,7 +450,7 @@ public class QuantityTypeTest {
         assertThat(new QuantityType<>("65 °F").multiply(BigDecimal.valueOf(1)).toUnit("°F").doubleValue(),
                 is(closeTo(65d, 0.0000000000000001d)));
         assertThat(new QuantityType<>("65 °F").multiply(BigDecimal.valueOf(2)).toUnit("°F").doubleValue(),
-                is(closeTo(589.67d, 0.0000000000000001d)));
+                is(closeTo(130d, 0.0000000000000001d)));
     }
 
     @Test
@@ -465,7 +465,7 @@ public class QuantityTypeTest {
         assertThat(result.doubleValue(), is(closeTo(65d, 0.0000000000000001d)));
         assertEquals(ImperialUnits.FAHRENHEIT, result.getUnit());
         result = new QuantityType<>("65 °F").multiply(QuantityType.valueOf(2, Units.ONE));
-        assertThat(result.doubleValue(), is(closeTo(589.67d, 0.0000000000000001d)));
+        assertThat(result.doubleValue(), is(closeTo(130d, 0.0000000000000001d)));
         assertEquals(ImperialUnits.FAHRENHEIT, result.getUnit());
         result = QuantityType.valueOf(1, Units.ONE).multiply(new QuantityType<>("65 °F"));
         assertThat(result.doubleValue(), is(closeTo(65d, 0.0000000000000001d)));
